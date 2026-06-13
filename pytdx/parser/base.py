@@ -3,7 +3,6 @@
 from pytdx.log import DEBUG, log
 import zlib
 import struct
-import sys
 import datetime
 
 try:
@@ -130,12 +129,8 @@ class BaseParser(object):
                     log.debug("不需要解压")
                 else:
                     log.debug("需要解压")
-                    if sys.version_info[0] == 2:
-                        unziped_data = zlib.decompress(buffer(body_buf))
-                    else:
-                        unziped_data = zlib.decompress(body_buf)
+                    unziped_data = zlib.decompress(body_buf)
                     body_buf = unziped_data
-                    ## 解压
                 if DEBUG:
                     log.debug("recv body: ")
                     log.debug(body_buf)

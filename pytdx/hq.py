@@ -223,7 +223,7 @@ if __name__ == '__main__':
     import pprint
 
     api = TdxHq_API()
-    if api.connect('180.153.18.170', 7709):
+    with api.connect('180.153.18.170', 7709):
         log.info("获取股票行情")
         stocks = api.get_security_quotes([(0, "000001"), (1, "600300")])
         pprint.pprint(stocks)

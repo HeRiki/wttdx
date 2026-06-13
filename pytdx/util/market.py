@@ -51,14 +51,25 @@ def get_stock_markets(symbols=None):
     return results
 
 
+# 别名映射
+FREQUENCY_ALIAS = {
+    'month': 'mon', 'monthly': 'mon',
+    'days': 'day', 'daily': 'day',
+    'week': 'week', 'weekly': 'week',
+    'year': 'year', 'yearly': 'year',
+    'quarter': '3mon',
+}
+
+
 def get_frequency(frequency):
     """将K线周期名称转为数字索引
 
-    :param frequency: 字符串如 '5m','day','week' 或数字 0-11
+    :param frequency: 字符串如 '5m','day','week','month' 或数字 0-11
     :return: int
     """
     try:
         if isinstance(frequency, str):
+            frequency = FREQUENCY_ALIAS.get(frequency, frequency)
             return FREQUENCY.index(frequency)
         return int(frequency)
     except (ValueError, IndexError):

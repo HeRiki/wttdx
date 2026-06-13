@@ -163,10 +163,6 @@ def connect_to(ipandport):
 def disconnect():
     api.disconnect()
 
-if sys.version_info[0] == 2:
-    reload(sys)
-    sys.setdefaultencoding('utf8')
-
 FUNCTION_LIST_STR = "0 : 使用交互式接口\n"
 for x, y in FUNCTION_LIST.items():
     FUNCTION_LIST_STR = FUNCTION_LIST_STR + str(x) + " : " + y[0] + "\n"

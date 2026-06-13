@@ -1,0 +1,7 @@
+click
+pandas
+cryptography
+pylint
+pytest
+pypandoc
+gitpython

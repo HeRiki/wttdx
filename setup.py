@@ -53,7 +53,7 @@ print(30 * '-')
 
 setup(
     name=pkg_name,
-    version='1.72',
+    version='1.73.0',
     python_requires='>=3.8',
     description='A Python Interface to TDX protocol',
     long_description=long_description,
@@ -64,8 +64,8 @@ setup(
     install_requires=[
             'click',
             'pandas',
-
             'cryptography',
+            'tqdm',
     ],
     entry_points={
         'console_scripts': [

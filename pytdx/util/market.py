@@ -29,9 +29,14 @@ def get_stock_market(symbol=''):
         return TDXParams.MARKET_SH
 
     if symbol.startswith(('00', '12', '13', '18', '15', '16', '20', '30', '39', '115', '1318')):
+        pass  # falls through to SZ below
         return TDXParams.MARKET_SZ
 
     if symbol.startswith(('5', '6', '9', '7')):
+        return TDXParams.MARKET_SH
+
+    # SH index: 88xxxx, 99xxxx
+    if symbol.startswith(('88', '99')):
         return TDXParams.MARKET_SH
 
     return TDXParams.MARKET_SZ

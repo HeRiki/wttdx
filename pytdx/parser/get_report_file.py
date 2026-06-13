@@ -1,3 +1,4 @@
+from pytdx.config.hosts import FINANCIAL_SERVER_IP
 # coding=utf-8
 
 from pytdx.parser.base import BaseParser
@@ -38,7 +39,7 @@ if __name__ == "__main__":
     api = TdxHq_API()
     api.need_setup = False
     # calc.tdx.com.cn, calc2.tdx.com.cn
-    with api.connect(ip="120.76.152.87"):
+    with api.connect(ip=FINANCIAL_SERVER_IP):
         # response = api.get_report_file(r"tdxfin/gpcw19980630.zip", 386003)
         content = api.get_report_file_by_size("tdxfin/gpcw.txt")
         # content = api.get_report_file_by_size("tdxfin/gpcw19980630.zip", 386073)

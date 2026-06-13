@@ -30,7 +30,7 @@ class BaseCralwer:
         result =  self.parse(download_file, *args, **kwargs)
         try:
             download_file.close()
-        except:
+        except Exception:
             pass
         return result
 

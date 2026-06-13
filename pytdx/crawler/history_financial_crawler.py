@@ -1,3 +1,4 @@
+from pytdx.config.hosts import FINANCIAL_SERVER_IP
 # coding: utf-8
 
 from struct import calcsize, unpack
@@ -29,7 +30,7 @@ class HistoryFinancialListCrawler(BaseCralwer):
         api = TdxHq_API()
         api.need_setup = False
         # calc.tdx.com.cn, calc2.tdx.com.cn
-        with api.connect(ip="120.76.152.87"):
+        with api.connect(ip=FINANCIAL_SERVER_IP):
             content = api.get_report_file_by_size("tdxfin/gpcw.txt")
             if path_to_download is None:
                 download_file = tempfile.NamedTemporaryFile(delete=True)
@@ -82,7 +83,7 @@ class HistoryFinancialCrawler(BaseCralwer):
         api = TdxHq_API()
         api.need_setup = False
         # calc.tdx.com.cn, calc2.tdx.com.cn
-        with api.connect(ip="120.76.152.87"):
+        with api.connect(ip=FINANCIAL_SERVER_IP):
             content = api.get_report_file_by_size("tdxfin/" + filename, filesize=filesize, reporthook=reporthook)
             if path_to_download is None:
                 download_file = tempfile.NamedTemporaryFile(delete=True)

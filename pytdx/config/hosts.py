@@ -111,3 +111,5 @@ hq_hosts = [
 
 
 ]
+# 通达信财务数据服务器 (calc.tdx.com.cn / calc2.tdx.com.cn)
+FINANCIAL_SERVER_IP = "120.76.152.87"

@@ -75,6 +75,8 @@ print(datacrawler.to_df(data=result))
 
 ```
 
+如果不传 `path_to_download`，临时文件会依据 `filename` 自动保留 `.zip` 后缀并按 zip 内容解析；即使临时文件本身没有 `.zip` 后缀，也会根据 `filename` 参数识别压缩包。解压时会拒绝越界路径，避免恶意 zip 写出目标目录。
+
 ## 通过reader 读取数据
 
 如果您自己管理文件的下载或者本地已经有对应的数据文件，可以使用我们的 `HistoryFinancialReader`来读取本地数据，使用方法和其它的Reader是类似的, 我们的reader同时支持`.zip`和解压后的`.dat`文件

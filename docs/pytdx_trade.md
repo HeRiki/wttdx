@@ -9,10 +9,19 @@ Pytdx无法直接提供交易功能，目前采用调用网上常见的`trade.dl
 
 为了启动`trade.dll`，我们提供了TdxTradeServer, 将请求封装为 http rest api, 在使用本接口之前，需要用下面的命令
 
-```
-&gt; get_tts
+`get_tts` 会从网络下载 `trade.dll` 和 TdxTradeServer 压缩包。为兼容历史行为，工具仍保留原 HTTP 下载源作为默认值；但 HTTP 传输和缺少校验都存在被篡改风险，建议自行提供可信 HTTPS 下载地址，并同时提供文件的 SHA256 校验值：
+
+PowerShell:
 
 ```
+$env:PYTDX_TRADE_DLL_URL = "https://example.com/Trade.dll"
+$env:PYTDX_TRADE_SERVER_URL = "https://example.com/TdxTradeServer.zip"
+$env:PYTDX_TRADE_DLL_SHA256 = "trade.dll 的 sha256"
+$env:PYTDX_TRADE_SERVER_SHA256 = "TdxTradeServer zip 的 sha256"
+get_tts
+```
+
+如果不设置上述 URL，工具会尝试历史默认 HTTP 源；该源可能随网络环境不可用，也无法提供传输安全保证。
 
 配置好trade服务（如果要配置多账号版本，建议配置多账号版本的TdxTradeServer)
 

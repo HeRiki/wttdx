@@ -1,6 +1,7 @@
 #coding: utf-8
 
 from collections import OrderedDict
+import os
 
 import pandas as pd
 import pytest
@@ -15,6 +16,11 @@ class Log(object):
 
 
 log = Log()
+
+pytestmark = pytest.mark.skipif(
+    os.getenv("PYTDX_RUN_INTEGRATION") != "1",
+    reason="set PYTDX_RUN_INTEGRATION=1 to run network integration tests",
+)
 
 
 # 测试任意组合的选项

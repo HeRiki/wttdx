@@ -1,7 +1,13 @@
+import os
 import pytest
 import pandas as pd
 from pytdx.crawler.base_crawler import demo_reporthook
 from pytdx.crawler.history_financial_crawler import HistoryFinancialListCrawler
+
+pytestmark = pytest.mark.skipif(
+    os.getenv("PYTDX_RUN_INTEGRATION") != "1",
+    reason="set PYTDX_RUN_INTEGRATION=1 to run network integration tests",
+)
 
 def test_crawl_history_financial_list_via_tcp():
 

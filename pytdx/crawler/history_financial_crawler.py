@@ -8,6 +8,8 @@ import tempfile
 import random
 import os
 import pandas as pd
+import stat
+import zipfile
 
 
 """
@@ -86,7 +88,8 @@ class HistoryFinancialCrawler(BaseCralwer):
         with api.connect(ip=FINANCIAL_SERVER_IP):
             content = api.get_report_file_by_size("tdxfin/" + filename, filesize=filesize, reporthook=reporthook)
             if path_to_download is None:
-                download_file = tempfile.NamedTemporaryFile(delete=True)
+                suffix = ".zip" if filename.lower().endswith(".zip") else ""
+                download_file = tempfile.NamedTemporaryFile(delete=True, suffix=suffix)
             else:
                 download_file = open(path_to_download, 'wb')
             download_file.write(content)    
@@ -97,51 +100,60 @@ class HistoryFinancialCrawler(BaseCralwer):
 
         header_pack_format = '<1hI1H3L'
 
-        if download_file.name.endswith('.zip'):
-            tmpdir_root = tempfile.gettempdir()
-            subdir_name = "pytdx_" + str(random.randint(0, 1000000))
-            tmpdir = os.path.join(tmpdir_root, subdir_name)
-            shutil.rmtree(tmpdir, ignore_errors=True)
-            os.makedirs(tmpdir)
-            shutil.unpack_archive(download_file.name, extract_dir=tmpdir)
-            # only one file endswith .dat should be in zip archives
-            datfile = None
-            for _file in os.listdir(tmpdir):
-                if _file.endswith(".dat"):
-                    datfile = open(os.path.join(tmpdir, _file), "rb")
+        filename = kwargs.get("filename", "")
+        is_zip_file = download_file.name.endswith('.zip') or filename.lower().endswith(".zip")
 
-            if datfile is None:
-                raise Exception("no dat file found in zip archive")
-        else:
-            datfile = download_file
-        header_size = calcsize(header_pack_format)
-        stock_item_size = calcsize("<6s1c1L")
-        data_header = datfile.read(header_size)
-        stock_header = unpack(header_pack_format, data_header)
-        max_count = stock_header[2]
-        report_date = stock_header[1]
-        report_size = stock_header[4]
-        report_fields_count = int(report_size / 4)
-        report_pack_format = '<{}f'.format(report_fields_count)
+        tmpdir = None
+        datfile = None
+        try:
+            if is_zip_file:
+                tmpdir_root = tempfile.gettempdir()
+                subdir_name = "pytdx_" + str(random.randint(0, 1000000))
+                tmpdir = os.path.join(tmpdir_root, subdir_name)
+                shutil.rmtree(tmpdir, ignore_errors=True)
+                os.makedirs(tmpdir)
+                with zipfile.ZipFile(download_file) as zf:
+                    safe_extract_zip(zf, tmpdir)
+                # only one file endswith .dat should be in zip archives
+                for _file in os.listdir(tmpdir):
+                    if _file.endswith(".dat"):
+                        datfile = open(os.path.join(tmpdir, _file), "rb")
 
-        results = []
-        for stock_idx in range(0, max_count):
-            datfile.seek(header_size + stock_idx * calcsize("<6s1c1L"))
-            si = datfile.read(stock_item_size)
-            stock_item = unpack("<6s1c1L", si)
-            code = stock_item[0].decode("utf-8")
-            foa = stock_item[2]
-            datfile.seek(foa)
+                if datfile is None:
+                    raise Exception("no dat file found in zip archive")
+            else:
+                datfile = download_file
+            header_size = calcsize(header_pack_format)
+            stock_item_size = calcsize("<6s1c1L")
+            data_header = datfile.read(header_size)
+            stock_header = unpack(header_pack_format, data_header)
+            max_count = stock_header[2]
+            report_date = stock_header[1]
+            report_size = stock_header[4]
+            report_fields_count = int(report_size / 4)
+            report_pack_format = '<{}f'.format(report_fields_count)
 
-            info_data = datfile.read(calcsize(report_pack_format))
-            cw_info = unpack(report_pack_format, info_data)
-            one_record = (code, report_date) + cw_info
-            results.append(one_record)
+            results = []
+            for stock_idx in range(0, max_count):
+                datfile.seek(header_size + stock_idx * calcsize("<6s1c1L"))
+                si = datfile.read(stock_item_size)
+                stock_item = unpack("<6s1c1L", si)
+                code = stock_item[0].decode("utf-8")
+                foa = stock_item[2]
+                datfile.seek(foa)
 
-        if download_file.name.endswith('.zip'):
-            datfile.close()
-            shutil.rmtree(tmpdir, ignore_errors=True)
-        return results
+                info_data = datfile.read(calcsize(report_pack_format))
+                cw_info = unpack(report_pack_format, info_data)
+                one_record = (code, report_date) + cw_info
+                results.append(one_record)
+
+            return results
+        finally:
+            if is_zip_file:
+                if datfile is not None:
+                    datfile.close()
+                if tmpdir is not None:
+                    shutil.rmtree(tmpdir, ignore_errors=True)
 
     def to_df(self, data):
         if len(data) == 0:
@@ -158,6 +170,18 @@ class HistoryFinancialCrawler(BaseCralwer):
         df =  pd.DataFrame(data=data, columns=col)
         df.set_index('code', inplace=True)
         return df
+
+
+def safe_extract_zip(zf, target_dir):
+    target_dir = os.path.realpath(target_dir)
+    for item in zf.infolist():
+        mode = item.external_attr >> 16
+        if stat.S_IFMT(mode) == stat.S_IFLNK:
+            raise Exception("unsafe zip symlink: {}".format(item.filename))
+        target_path = os.path.realpath(os.path.join(target_dir, item.filename))
+        if os.path.commonpath([target_dir, target_path]) != target_dir:
+            raise Exception("unsafe zip path: {}".format(item.filename))
+    zf.extractall(target_dir)
 
 
 if __name__ == '__main__':

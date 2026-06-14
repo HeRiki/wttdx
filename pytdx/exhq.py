@@ -62,65 +62,65 @@ class TdxExHq_API(BaseSocketClient):
 
     @update_last_ack_time
     def get_markets(self):
-        cmd = GetMarkets(self.client)
+        cmd = GetMarkets(self.client, lock=self.lock)
         return cmd.call_api()
 
     @update_last_ack_time
     def get_instrument_count(self):
-        cmd = GetInstrumentCount(self.client)
+        cmd = GetInstrumentCount(self.client, lock=self.lock)
         return cmd.call_api()
 
     @update_last_ack_time
     def get_instrument_quote(self, market, code):
-        cmd = GetInstrumentQuote(self.client)
+        cmd = GetInstrumentQuote(self.client, lock=self.lock)
         cmd.setParams(market, code)
         return cmd.call_api()
 
     @update_last_ack_time
     def get_instrument_bars(self, category, market, code, start=0, count=700):
-        cmd = GetInstrumentBars(self.client)
+        cmd = GetInstrumentBars(self.client, lock=self.lock)
         cmd.setParams(category, market, code, start=start, count=count)
         return cmd.call_api()
 
     @update_last_ack_time
     def get_minute_time_data(self, market, code):
-        cmd = GetMinuteTimeData(self.client)
+        cmd = GetMinuteTimeData(self.client, lock=self.lock)
         cmd.setParams(market, code)
         return cmd.call_api()
 
     @update_last_ack_time
     def get_history_minute_time_data(self, market, code, date):
-        cmd = GetHistoryMinuteTimeData(self.client)
+        cmd = GetHistoryMinuteTimeData(self.client, lock=self.lock)
         cmd.setParams(market, code, date=date)
         return cmd.call_api()
 
     @update_last_ack_time
     def get_transaction_data(self, market, code, start=0, count=1800):
-        cmd = GetTransactionData(self.client)
+        cmd = GetTransactionData(self.client, lock=self.lock)
         cmd.setParams(market, code, start=start, count=count)
         return cmd.call_api()
 
     @update_last_ack_time
     def get_history_transaction_data(self, market, code, date, start=0, count=1800):
-        cmd = GetHistoryTransactionData(self.client)
+        cmd = GetHistoryTransactionData(self.client, lock=self.lock)
         cmd.setParams(market, code, date, start=start, count=count)
         return cmd.call_api()
 
     @update_last_ack_time
     def get_history_instrument_bars_range(self, market, code, start, end):
-        cmd = GetHistoryInstrumentBarsRange(self.client)
+        cmd = GetHistoryInstrumentBarsRange(self.client, lock=self.lock)
         cmd.setParams(market, code, start, end)
         return cmd.call_api()
 
     @update_last_ack_time
     def get_instrument_info(self, start, count=100):
-        cmd = GetInstrumentInfo(self.client)
+        cmd = GetInstrumentInfo(self.client, lock=self.lock)
         cmd.setParams(start, count)
         return cmd.call_api()
 
     @update_last_ack_time
     def get_instrument_quote_list(self, market, category, start=0, count=80):
-        cmd = GetInstrumentQuoteList(self.client)
+        cmd = GetInstrumentQuoteList(self.client, lock=self.lock)
         cmd.setParams(market, category, start, count)
         return cmd.call_api()
 

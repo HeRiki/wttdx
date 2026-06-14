@@ -244,16 +244,43 @@ class StdQuotes:
 
     def get_k_data(self, code, start_date, end_date):
         """获取K线数据的底层实现"""
-        first = (pd.to_datetime(end_date) - pd.to_datetime(datetime.now().date())).days
-        first = (abs(first), 0)[first >= 0]
+        if start_date is None:
+            start_date = '1990-01-01'
+        if end_date is None:
+            end_date = datetime.now().strftime('%Y-%m-%d')
 
-        last = (pd.to_datetime(start_date) - pd.to_datetime(datetime.now().date())).days
-        last = (abs(last), 0)[last >= 0]
+        market = get_stock_market(code)
+        frames = []
+        for i in range(10):
+            result = self.client.get_security_bars(
+                9, market, str(code), (9 - i) * 800, 800)
+            if not result:
+                continue
+            df = self.client.to_df(result)
+            if not df.empty:
+                frames.append(df)
 
-        first -= int(first / 2.8)
-        last -= int(last / 3.5)
+        if not frames:
+            return pd.DataFrame()
 
-      
+        data = pd.concat(frames, ignore_index=True)
+        if 'datetime' not in data.columns:
+            return data
+
+        data = data.assign(
+            date=data['datetime'].apply(lambda x: str(x)[0:10]),
+            code=str(code)
+        )
+        drop_cols = [
+            c for c in ['year', 'month', 'day', 'hour', 'minute', 'datetime']
+            if c in data.columns
+        ]
+        data = data.drop(drop_cols, axis=1)
+        data = data.drop_duplicates(subset=['date'], keep='last')
+        data = data.set_index('date', drop=False, inplace=False).sort_index()
+        return data[start_date:end_date].assign(
+            date=lambda x: x['date'].apply(lambda v: str(v)[0:10])
+        )
 
 
 class ExtQuotes:

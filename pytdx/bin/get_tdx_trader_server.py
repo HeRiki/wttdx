@@ -7,6 +7,9 @@ import struct
 import zipfile
 import uuid
 import shutil
+import hashlib
+import stat
+from urllib.parse import urlparse
 from urllib.request import urlretrieve
 
 
@@ -57,7 +60,11 @@ Created by rainx with love!
 
     se("开始下载trade.dll...")
     trade_dll_template = os.path.join(dll_path, "trade.dll")
-    urlretrieve(TRADE_DLL_KEY, trade_dll_template)
+    download_and_validate(
+        os.getenv("PYTDX_TRADE_DLL_URL") or TRADE_DLL_KEY,
+        trade_dll_template,
+        os.getenv("PYTDX_TRADE_DLL_SHA256"),
+    )
     se("下载完成....")
 
     se("为了可以使用trade.dll，需要绑定账号")
@@ -85,8 +92,11 @@ Created by rainx with love!
 
 def download_and_setup_tdx_trade_server(download_path, dll_path, real_trade_dll_name):
     zip_file_path = os.path.join(download_path, "tts.zip")
-    urlretrieve(TDX_TRADE_SEVER_KEY, zip_file_path)
-    print(download_path)
+    download_and_validate(
+        os.getenv("PYTDX_TRADE_SERVER_URL") or TDX_TRADE_SEVER_KEY,
+        zip_file_path,
+        os.getenv("PYTDX_TRADE_SERVER_SHA256"),
+    )
 
     if os.path.isfile(zip_file_path):
         se("下载完成")
@@ -94,9 +104,7 @@ def download_and_setup_tdx_trade_server(download_path, dll_path, real_trade_dll_
         raise SystemExit("下载失败")
 
     se("开始解压")
-    zf = zipfile.ZipFile(file=zip_file_path)
-    zf.extractall(dll_path)
-    zf.close()
+    safe_extract_zip(zip_file_path, dll_path)
     se("解压完成")
 
     config_file_content, bind_ip, bind_port, enc_key, enc_iv = gen_config_file(real_trade_dll_name)
@@ -166,6 +174,65 @@ api = TdxTradeApi(endpoint="http://{}:{}/api", enc_key=b"{}", enc_iv=b"{}")
     se("pytdx demo 演示代码在 {}".format(demo_path),fg="blue")
     se("注意 v1.5版本之后已经支持多账号版本，关于如何配置使用多账号版本，请参考 https://github.com/rainx/TdxTradeServer", fg="red")
     se("Happy Trading!", fg="green")
+
+
+def download_and_validate(url, output_path, expected_sha256=None):
+    if not url:
+        raise SystemExit(
+            "下载地址为空，请设置下载地址："
+            "PYTDX_TRADE_DLL_URL 或 PYTDX_TRADE_SERVER_URL"
+        )
+    parsed = urlparse(url)
+    scheme = parsed.scheme.lower()
+    if scheme not in ("http", "https") or not parsed.netloc:
+        raise SystemExit("下载地址必须是 HTTP 或 HTTPS: {}".format(url))
+
+    if scheme == "http":
+        se("警告：正在使用 HTTP 下载，传输过程可能被篡改；建议改用 HTTPS 下载源。", fg="red")
+    if not expected_sha256:
+        se("警告：未设置 SHA256，无法校验下载文件完整性。", fg="red")
+
+    try:
+        urlretrieve(url, output_path)
+    except Exception as e:
+        raise SystemExit("下载失败: {}".format(e))
+
+    if expected_sha256:
+        actual_sha256 = file_sha256(output_path)
+        if actual_sha256.lower() != expected_sha256.lower():
+            try:
+                os.remove(output_path)
+            except OSError:
+                pass
+            raise SystemExit(
+                "下载文件 SHA256 校验失败: expected={}, actual={}".format(
+                    expected_sha256, actual_sha256
+                )
+            )
+
+
+secure_download = download_and_validate
+
+
+def file_sha256(path):
+    hasher = hashlib.sha256()
+    with open(path, "rb") as f:
+        for chunk in iter(lambda: f.read(1024 * 1024), b""):
+            hasher.update(chunk)
+    return hasher.hexdigest()
+
+
+def safe_extract_zip(zip_file_path, target_dir):
+    target_dir = os.path.realpath(target_dir)
+    with zipfile.ZipFile(file=zip_file_path) as zf:
+        for item in zf.infolist():
+            mode = item.external_attr >> 16
+            if stat.S_IFMT(mode) == stat.S_IFLNK:
+                raise SystemExit("拒绝解压符号链接: {}".format(item.filename))
+            target_path = os.path.realpath(os.path.join(target_dir, item.filename))
+            if os.path.commonpath([target_dir, target_path]) != target_dir:
+                raise SystemExit("拒绝解压越界路径: {}".format(item.filename))
+        zf.extractall(target_dir)
 
 
 def gen_config_file(real_trade_dll_name):
@@ -239,8 +306,4 @@ def se(*args, **kwargs):
     click.secho(*_args, **kwargs)
 
 if __name__ == '__main__':
-    try:
-        main()
-        # gen_config_file()
-    except SystemExit:
-        exit()
+    main()

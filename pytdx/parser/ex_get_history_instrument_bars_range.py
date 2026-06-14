@@ -56,12 +56,11 @@ class GetHistoryInstrumentBarsRange(BaseParser):
         # 算了，前面不解析了，没太大用
         # (market, code) = struct.unpack("<B9s", body_buf[0: 10]
 
-        (ret_count,) = struct.unpack("H", body_buf[pos: pos+2])
+        (ret_count,) = struct.unpack("<H", body_buf[pos: pos+2])
         pos = pos+2
         #print(hexdump.hexdump(body_buf[20:52]))
        # print(hexdump.hexdump(body_buf[20: 20+ret_count*32]))
         #global raw_li
-        print(ret_count)
         
         for i in range(ret_count):
             (d1,d2,open_price, high, low, close, position, trade, settlementprice) = struct.unpack("<HHffffIIf", body_buf[pos:pos+32])  

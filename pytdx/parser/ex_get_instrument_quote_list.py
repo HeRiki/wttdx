@@ -38,7 +38,7 @@ class GetInstrumentQuoteList(BaseParser):
 
         datalist = []
         if self.category not in [2,3] :
-            return NotImplementedError("暂时不支持期货,港股之外的品类")
+            raise NotImplementedError("暂时不支持期货,港股之外的品类")
 
         for i in range(num):
             """
@@ -48,11 +48,7 @@ class GetInstrumentQuoteList(BaseParser):
             code = code.strip(b"\0").decode("gbk") # to unicode
             pos += 10
             if self.category == 3:
-                try:
-                    pos = self.extract_futures(market, code, body_buf, datalist, pos)
-                except Exception as e:
-                    print(e)
-                print(pos)
+                pos = self.extract_futures(market, code, body_buf, datalist, pos)
             elif self.category == 2:
                 """
                    market  category   name short_name

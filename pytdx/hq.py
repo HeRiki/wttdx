@@ -174,15 +174,18 @@ class TdxHq_API(BaseSocketClient):
         :param filename the filename to download
         :param filesize the filesize to download , if you do not known the actually filesize, leave this value 0
         """
-        filecontent = bytearray(filesize)
+        filecontent = bytearray()
         current_downloaded_size = 0
         get_zero_length_package_times = 0
         while current_downloaded_size < filesize or filesize == 0:
             response = self.get_report_file(filename, current_downloaded_size)
             if response["chunksize"] > 0:
-                current_downloaded_size = current_downloaded_size + \
-                    response["chunksize"]
-                filecontent.extend(response["chunkdata"])
+                chunk = response["chunkdata"][:response["chunksize"]]
+                if filesize:
+                    remaining = filesize - current_downloaded_size
+                    chunk = chunk[:remaining]
+                current_downloaded_size += len(chunk)
+                filecontent.extend(chunk)
                 if reporthook is not None:
                     reporthook(current_downloaded_size,filesize)
             else:

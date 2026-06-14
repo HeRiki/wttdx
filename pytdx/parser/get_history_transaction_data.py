@@ -11,7 +11,7 @@ class GetHistoryTransactionData(BaseParser):
         if type(code) is str:
             code = code.encode("utf-8")
 
-        if type(date) is (type(date) is str) or (type(date) is bytes):
+        if isinstance(date, (str, bytes)):
             date = int(date)
 
         pkg = bytearray.fromhex(u'0c 01 30 01 00 01 12 00 12 00 b5 0f')

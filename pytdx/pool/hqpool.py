@@ -61,19 +61,23 @@ class TdxHqPool_API(object):
         :param kwargs: kv参数
         :return: 调用结果
         """
-        try:
-            result = getattr(self.api, method_name)(*args, **kwargs)
-            if result is None:
-                log.info("api(%s) call return None" % (method_name,))
-        except Exception as e:
-            log.info("api(%s) call failed, Exception is %s" % (method_name, str(e)))
-            result = None
+        self.api_call_retry_times = 0
+        while True:
+            try:
+                result = getattr(self.api, method_name)(*args, **kwargs)
+                if result is None:
+                    log.info("api(%s) call return None" % (method_name,))
+                else:
+                    self.api_call_retry_times = 0
+                    return result
+            except Exception as e:
+                log.info("api(%s) call failed, Exception is %s" % (method_name, str(e)))
 
-        # 如果无法获取信息，则进行重试
-        if result is None:
             if self.api_call_retry_times >= self.api_call_max_retry_times:
                 log.info("(method_name=%s) max retry times(%d) reached" % (method_name, self.api_call_max_retry_times))
                 raise TdxHqApiCallMaxRetryTimesReachedException("(method_name=%s) max retry times reached" % method_name)
+
+            self.api_call_retry_times += 1
             old_api_ip = self.api.ip
             new_api_ip = None
             if self.hot_failover_api:
@@ -81,7 +85,7 @@ class TdxHqPool_API(object):
                 log.info("api call from init client (ip=%s) err, perform rotate to (ip =%s)..." %(old_api_ip, new_api_ip))
                 self.api.disconnect()
                 self.api = self.hot_failover_api
-            log.info("retry times is " + str(self.api_call_max_retry_times))
+            log.info("retry times is " + str(self.api_call_retry_times))
             # 从池里再次获取备用ip
             new_ips = self.ippool.get_ips()
 
@@ -97,15 +101,7 @@ class TdxHqPool_API(object):
                 self.hot_failover_api.connect(*choise_ip)
             else:
                 self.hot_failover_api = None
-            # 阻塞0.2秒，然后递归调用自己
             time.sleep(self.api_retry_interval)
-            result = self.do_hq_api_call(method_name, *args, **kwargs)
-            self.api_call_retry_times += 1
-
-        else:
-            self.api_call_retry_times = 0
-
-        return result
 
     def connect(self, ipandport, hot_failover_ipandport):
         log.debug("setup ip pool")
@@ -117,12 +113,32 @@ class TdxHqPool_API(object):
         return self
 
     def disconnect(self):
+        disconnect_error = None
+
         log.debug("primary api disconnected")
-        self.api.disconnect()
+        if self.api:
+            try:
+                self.api.disconnect()
+            except Exception as e:
+                disconnect_error = e
+
         log.debug("hot backup api  disconnected")
-        self.hot_failover_api.disconnect()
+        if self.hot_failover_api:
+            try:
+                self.hot_failover_api.disconnect()
+            except Exception as e:
+                if disconnect_error is None:
+                    disconnect_error = e
+
         log.debug("ip pool released")
-        self.ippool.teardown()
+        try:
+            self.ippool.teardown()
+        except Exception as e:
+            if disconnect_error is None:
+                disconnect_error = e
+
+        if disconnect_error:
+            raise disconnect_error
 
     def close(self):
         """

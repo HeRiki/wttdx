@@ -15,7 +15,7 @@ class GetHistoryMinuteTimeData(BaseParser):
         :return:
         """
 
-        if (type(date) is str) or (type(date) is bytes):
+        if isinstance(date, (str, bytes)):
             date = int(date)
 
         if type(code) is str:

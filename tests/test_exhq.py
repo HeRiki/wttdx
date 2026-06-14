@@ -1,5 +1,6 @@
 #coding: utf-8
 
+import os
 import pytest
 from pytdx.errors import TdxFunctionCallError, TdxConnectionError
 from collections import OrderedDict
@@ -17,6 +18,11 @@ log = Log()
 
 
 test_server_ip = "112.74.214.43"
+
+pytestmark = pytest.mark.skipif(
+    os.getenv("PYTDX_RUN_INTEGRATION") != "1",
+    reason="set PYTDX_RUN_INTEGRATION=1 to run network integration tests",
+)
 
 
 def test_all_functions():
